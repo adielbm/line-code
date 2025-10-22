@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Line Coding Schemes</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: white;
+            color: black;
+        }
+        .input-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .input-container label {
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        .input-container input {
+            font-family: monospace;
+            padding: 5px 10px;
+            font-size: 14px;
+            width: 300px;
+        }
+        .input-container button {
+            padding: 5px 15px;
+            margin-left: 10px;
+            cursor: pointer;
+        }
+        table {
+            border-collapse: collapse;
+            margin: 0 auto;
+        }
+        td {
+            padding: 0;
+            text-align: center;
+            width: 50px;
+            height: 60px;
+            vertical-align: middle;
+        }
+        td.odd {
+            background: #8d8d8d12;
+        }
+        .label {
+            font-weight: bold;
+            text-align: right;
+            padding-right: 10px;
+            width: 200px;
+            background: white !important;
+        }
+        svg {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="input-container">
+        <label for="bitInput">Bits:</label>
+        <input type="text" id="bitInput" value="1,0,1,1,0,0,0,1,1,0,1" placeholder="Enter bits (e.g., 1,0,1,1,0)">
+        <button onclick="updateDiagram()">Update</button>
+    </div>
+    <table id="lineCodeTable"></table>
+    
+    <script>
+
+        // const bits = [0, 0, 1, 0, 1, 1, 1, 1, 0, 1, 0, 0, 0, 0, 1, 0];
+        let bits = [1,0,1,1,0,0,0,1,1,0,1];
+        
+        function updateDiagram() {
+            const input = document.getElementById('bitInput').value;
+            const newBits = input.split(',').map(b => parseInt(b.trim())).filter(b => b === 0 || b === 1);
+            
+            if (newBits.length === 0) {
+                alert('Please enter valid bits (0s and 1s separated by commas)');
+                return;
+            }
+            
+            bits = newBits;
+            renderTable();
+        }
+        
+        function renderTable() {
+            const nrzl = generateNRZL(bits);
+            const nrzi = generateNRZI(bits);
+            const manchester = generateManchester(bits);
+            const diffManchester = generateDiffManchester(bits);
+            
+            const table = document.getElementById('lineCodeTable');
+            table.innerHTML = ''; // Clear existing content
+            
+            // Bits row
+            let row = table.insertRow();
+            let cell = row.insertCell();
+            cell.className = 'label';
+            cell.textContent = 'Bits:';
+            bits.forEach((bit, i) => {
+                cell = row.insertCell();
+                cell.textContent = bit;
+                if (i % 2 === 0) cell.className = 'odd';
+            });
+            
+            // NRZ-L row
+            row = table.insertRow();
+            cell = row.insertCell();
+            cell.className = 'label';
+            cell.textContent = 'NRZ-L:';
+            nrzl.forEach((points, i) => {
+                cell = row.insertCell();
+                if (i % 2 === 0) cell.className = 'odd';
+                cell.innerHTML = `<svg width="50" height="60"><polyline points="${points}" fill="none" stroke="black" stroke-width="2"/></svg>`;
+            });
+            
+            // NRZ-I row
+            row = table.insertRow();
+            cell = row.insertCell();
+            cell.className = 'label';
+            cell.textContent = 'NRZ-I:';
+            nrzi.forEach((points, i) => {
+                cell = row.insertCell();
+                if (i % 2 === 0) cell.className = 'odd';
+                cell.innerHTML = `<svg width="50" height="60"><polyline points="${points}" fill="none" stroke="black" stroke-width="2"/></svg>`;
+            });
+            
+            // Manchester row
+            row = table.insertRow();
+            cell = row.insertCell();
+            cell.className = 'label';
+            cell.textContent = 'Manchester:';
+            manchester.forEach((points, i) => {
+                cell = row.insertCell();
+                if (i % 2 === 0) cell.className = 'odd';
+                cell.innerHTML = `<svg width="50" height="60"><polyline points="${points}" fill="none" stroke="black" stroke-width="2"/></svg>`;
+            });
+            
+            // Differential Manchester row
+            row = table.insertRow();
+            cell = row.insertCell();
+            cell.className = 'label';
+            cell.textContent = 'Differential Manchester:';
+            diffManchester.forEach((points, i) => {
+                cell = row.insertCell();
+                if (i % 2 === 0) cell.className = 'odd';
+                cell.innerHTML = `<svg width="50" height="60"><polyline points="${points}" fill="none" stroke="black" stroke-width="2"/></svg>`;
+            });
+        }
+        
+        // NRZ-L: 0 = low, 1 = high
+        function generateNRZL(bits) {
+            const signals = [];
+            for (let i = 0; i < bits.length; i++) {
+                const prev = i > 0 ? bits[i - 1] : bits[i];
+                const curr = bits[i];
+                if (prev !== curr) {
+                    signals.push(curr === 0 ? '1,15 1,45 50,45' : '1,45 1,15 50,15');
+                } else {
+                    signals.push(curr === 0 ? '0,45 50,45' : '0,15 50,15');
+                }
+            }
+            return signals;
+        }
+        
+        // NRZ-I: transition on 1, no transition on 0
+        function generateNRZI(bits) {
+            const signals = [];
+            let state = 0; // start low (this is where we are at the end of previous bit)
+            
+            for (let i = 0; i < bits.length; i++) {
+                const startState = state; // where this bit starts
+                
+                if (bits[i] === 1) {
+                    state = 1 - state; // toggle on 1, update where we end
+                }
+                // if bit is 0, state stays the same (no toggle)
+                
+                const endState = state; // where this bit ends
+                
+                if (startState !== endState) {
+                    // transition happened in this bit
+                    // low-to-high (startState=0): start at 45, go to 15
+                    // high-to-low (startState=1): start at 15, go to 45
+                    if (startState === 0) {
+                        signals.push('0,45 25,45 25,15 50,15'); // low to high
+                    } else {
+                        signals.push('0,15 25,15 25,45 50,45'); // high to low
+                    }
+                } else {
+                    // no transition, stay at same level
+                    signals.push(endState === 0 ? '0,45 50,45' : '0,15 50,15');
+                }
+            }
+            return signals;
+        }
+        
+        // Manchester: 0 = high-to-low, 1 = low-to-high
+        function generateManchester(bits) {
+            const signals = [];
+            let endState = null; // track where previous bit ended: 'high' or 'low'
+            
+            for (let i = 0; i < bits.length; i++) {
+                const curr = bits[i];
+                
+                if (curr === 0) {
+                    // 0 = high to low (transition down at middle)
+                    if (endState === 'low') {
+                        // need to go up first to reach high, then transition down
+                        signals.push('1,15 1,45 25,45 25,15 50,15');
+                    } else {
+                        // start high or first bit, transition down
+                        signals.push('0,45 25,45 25,15 50,15');
+                    }
+                    endState = 'low';
+                } else {
+                    // 1 = low to high (transition up at middle)
+                    if (endState === 'high') {
+                        // need to go down first to reach low, then transition up
+                        signals.push('1,45 1,15 25,15 25,45 50,45');
+                    } else {
+                        // start low or first bit, transition up
+                        signals.push('0,15 25,15 25,45 50,45');
+                    }
+                    endState = 'high';
+                }
+            }
+            return signals;
+        }
+        
+        // Differential Manchester: transition at middle always
+        // 0 = change at start, 1 = no change at start
+        function generateDiffManchester(bits) {
+            const signals = [];
+            let state = 1; // start high (0 = low, 1 = high)
+            
+            for (let i = 0; i < bits.length; i++) {
+                const curr = bits[i];
+                let startState = state;
+                
+                if (curr === 0) {
+                    // Bit 0: change at start, then transition at midpoint
+                    state = 1 - state; // toggle state at start
+                    
+                    // Draw the transition at start
+                    if (startState === 1) {
+                        // was high, go to low, then transition to high at midpoint
+                        signals.push('1,15 1,45 25,45 25,15 50,15');
+                        state = 1;
+                    } else {
+                        // was low, go to high, then transition to low at midpoint
+                        signals.push('1,45 1,15 25,15 25,45 50,45');
+                        state = 0;
+                    }
+                } else {
+                    // Bit 1: no change at start, just transition at midpoint
+                    if (state === 1) {
+                        // start high, transition to low at midpoint
+                        signals.push('0,15 25,15 25,45 50,45');
+                        state = 0;
+                    } else {
+                        // start low, transition to high at midpoint
+                        signals.push('0,45 25,45 25,15 50,15');
+                        state = 1;
+                    }
+                }
+            }
+            return signals;
+        }
+        
+        // Initial render
+        renderTable();
+        
+        // Allow Enter key to update
+        document.getElementById('bitInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                updateDiagram();
+            }
+        });
+    </script>
+</body>
+</html>
