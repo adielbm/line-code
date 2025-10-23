@@ -65,8 +65,7 @@
     
     <script>
 
-        // const bits = [0, 0, 1, 0, 1, 1, 1, 1, 0, 1, 0, 0, 0, 0, 1, 0];
-        let bits = [1,0,1,1,0,0,0,1,1,0,1];
+        let bits = [0, 0, 1, 0, 1, 1, 1, 1, 0];
         
         function updateDiagram() {
             const input = document.getElementById('bitInput').value;
@@ -101,11 +100,23 @@
                 if (i % 2 === 0) cell.className = 'odd';
             });
             
+            // Clock row
+            row = table.insertRow();
+            cell = row.insertCell();
+            cell.className = 'label';
+            cell.textContent = 'Clock';
+            bits.forEach((bit, i) => {
+                cell = row.insertCell();
+                if (i % 2 === 0) cell.className = 'odd';
+                // Clock goes from low to high in each bit period
+                cell.innerHTML = `<svg width="50" height="60"><polyline points="0,45 25,45 25,15 49,15 49,46" fill="none" stroke="black" stroke-width="2"/></svg>`;
+            });
+            
             // NRZ-L row
             row = table.insertRow();
             cell = row.insertCell();
             cell.className = 'label';
-            cell.textContent = 'NRZ-L:';
+            cell.textContent = 'NRZ-L';
             nrzl.forEach((points, i) => {
                 cell = row.insertCell();
                 if (i % 2 === 0) cell.className = 'odd';
@@ -116,7 +127,7 @@
             row = table.insertRow();
             cell = row.insertCell();
             cell.className = 'label';
-            cell.textContent = 'NRZ-I:';
+            cell.textContent = 'NRZ-I';
             nrzi.forEach((points, i) => {
                 cell = row.insertCell();
                 if (i % 2 === 0) cell.className = 'odd';
@@ -127,7 +138,7 @@
             row = table.insertRow();
             cell = row.insertCell();
             cell.className = 'label';
-            cell.textContent = 'Manchester:';
+            cell.textContent = 'Manchester';
             manchester.forEach((points, i) => {
                 cell = row.insertCell();
                 if (i % 2 === 0) cell.className = 'odd';
@@ -138,7 +149,7 @@
             row = table.insertRow();
             cell = row.insertCell();
             cell.className = 'label';
-            cell.textContent = 'Differential Manchester:';
+            cell.innerHTML = 'Differential<br/>Manchester';
             diffManchester.forEach((points, i) => {
                 cell = row.insertCell();
                 if (i % 2 === 0) cell.className = 'odd';
